@@ -52,8 +52,11 @@ class SFAura:
         post_data = f'message={message}&aura.context={context}&aura.token={self.token}'
         response = make_post_request(url=self.url, path=self.endpoint, headers=self.header, data=post_data)
 
-        fwuid_pattern = "Expected:(.*?) Actual"
-        self.fwuid = re.search(fwuid_pattern, response.text).group(1).strip()
+        fwuid_pattern = "\"fwuid\":\"(.*)\""
+        fwuid = re.search(fwuid_pattern, response.text)
+        if fwuid is not None:
+            self.fwuid = fwuid.group(1).strip()
+            
         self.context = self.build_context(self.fwuid)
     
         save_cache(path=self.folder, url=self.url, fwuid=self.fwuid, endpoint=self.endpoint)
@@ -97,7 +100,7 @@ class SFAura:
             message = self.build_object_item_message(item)
             post_data = f'message={message}&aura.context={self.context}&aura.token={self.token}'
             response = make_post_request(url=self.url, path=self.endpoint, headers=self.header, data=post_data, save_as=f'{item}_object', path_to_save=self.folder).json()
-            save_response(path=self.folder, filename=f'{item}_object', data=str(response))
+            save_response(path=self.folder, filename=f'{item}_object', data=json.dumps(response))
             
             if response['actions'][0]['state'] == 'SUCCESS':
                 number_of_items = len(response['actions'][0]['returnValue']['result'])
